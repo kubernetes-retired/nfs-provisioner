@@ -41,3 +41,6 @@ flycheck_*.el
 # nfs-provisioner binary
 nfs-provisioner
 
+# intellij
+.idea/
+nfs-provisioner.iml

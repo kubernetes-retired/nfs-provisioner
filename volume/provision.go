@@ -157,8 +157,8 @@ type nfsProvisioner struct {
 var _ controller.Provisioner = &nfsProvisioner{}
 
 // Provision creates a volume i.e. the storage asset and returns a PV object for
-// the volume.
-func (p *nfsProvisioner) Provision(options controller.VolumeOptions) (*v1.PersistentVolume, error) {
+// the volume.  claim is not used in this example.
+func (p *nfsProvisioner) Provision(options controller.VolumeOptions, claim *v1.PersistentVolumeClaim) (*v1.PersistentVolume, error) {
 	server, path, supGroup, exportBlock, exportId, projectBlock, projectId, err := p.createVolume(options)
 	if err != nil {
 		return nil, err
@@ -267,7 +267,7 @@ func (p *nfsProvisioner) validateOptions(options controller.VolumeOptions) (stri
 		return "", fmt.Errorf("error calling statfs on %v: %v", p.exportDir, err)
 	}
 	capacity := options.Capacity.Value()
-	available := int64(stat.Bavail) * stat.Bsize
+	available := int64(stat.Bavail) * int64(stat.Bsize)
 	if capacity > available {
 		return "", fmt.Errorf("insufficient available space %v bytes to satisfy claim for %v bytes", available, capacity)
 	}
