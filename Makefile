@@ -27,7 +27,11 @@ else
     endif
 endif
 
+GOOS := linux
+export GOOS
+
 all build:
+	go install -v
 	go build
 .PHONY: all build
 
