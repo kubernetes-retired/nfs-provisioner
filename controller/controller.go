@@ -454,29 +454,9 @@ func (ctrl *ProvisionController) provisionClaimOperation(claim *v1.PersistentVol
 		return nil
 	}
 
-	classObj, found, err := ctrl.classes.GetByKey(claimClass)
+	storageClass, err := ctrl.getStorageClass(claimClass)
 	if err != nil {
-		glog.Errorf("Error getting StorageClass %q of claim %q: %v", claimClass, claimToClaimKey(claim), err)
-		return nil
-	}
-	if !found {
-		glog.Errorf("StorageClass %q of claim %q not found", claimClass, claimToClaimKey(claim))
-		// 3. It tries to find a StorageClass instance referenced by annotation
-		//    `claim.Annotations["volume.beta.kubernetes.io/storage-class"]`. If not
-		//    found, it SHOULD report an error (by sending an event to the claim) and it
-		//    SHOULD retry periodically with step i.
-		return nil
-	}
-	storageClass, ok := classObj.(*v1beta1.StorageClass)
-	if !ok {
-		glog.Errorf("Cannot convert object to StorageClass: %+v", classObj)
-		return nil
-	}
-	if storageClass.Provisioner != ctrl.provisionerName {
-		// class.Provisioner has either changed since shouldProvision() or
-		// annDynamicallyProvisioned contains different provisioner than
-		// class.Provisioner.
-		glog.Errorf("Unknown provisioner %q requested in storage class %q of claim %q", storageClass.Provisioner, claimClass, claimToClaimKey(claim))
+		glog.Errorf("claim %v: %v", claimToClaimKey(claim), err)
 		return nil
 	}
 
@@ -528,7 +508,7 @@ func (ctrl *ProvisionController) provisionClaimOperation(claim *v1.PersistentVol
 		ctrl.eventRecorder.Event(claim, v1.EventTypeWarning, "ProvisioningFailed", strerr)
 
 		for i := 0; i < ctrl.createProvisionedPVRetryCount; i++ {
-			if err = ctrl.provisioner.Delete(volume); err == nil {
+			if err = ctrl.provisioner.Delete(volume, storageClass.Parameters); err == nil {
 				// Delete succeeded
 				glog.V(4).Infof("provisionClaimOperation [%s]: cleaning volume %s succeeded", claimToClaimKey(claim), volume.Name)
 				break
@@ -681,7 +661,13 @@ func (ctrl *ProvisionController) deleteVolumeOperation(volume *v1.PersistentVolu
 		return nil
 	}
 
-	if err := ctrl.provisioner.Delete(volume); err != nil {
+	storageClass, err := ctrl.getStorageClass(volume.Annotations[annClass])
+	if err != nil {
+		glog.Error(err)
+		return nil
+	}
+
+	if err := ctrl.provisioner.Delete(volume, storageClass.Parameters); err != nil {
 		if ierr, ok := err.(*IgnoredError); ok {
 			// Delete ignored, do nothing and hope another provisioner will delete it.
 			glog.Infof("deletion of volume %q ignored: %v", volume.Name, ierr)
@@ -728,6 +714,31 @@ func (ctrl *ProvisionController) scheduleOperation(operationName string, operati
 			glog.Errorf("Error scheduling operaion %q: %v", operationName, err)
 		}
 	}
+}
+
+func (ctrl *ProvisionController) getStorageClass(name string) (*v1beta1.StorageClass, error) {
+	classObj, found, err := ctrl.classes.GetByKey(name)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting StorageClass %q: %v", name, err)
+	}
+	if !found {
+		return nil, fmt.Errorf("StorageClass %q not found", name)
+		// 3. It tries to find a StorageClass instance referenced by annotation
+		//    `claim.Annotations["volume.beta.kubernetes.io/storage-class"]`. If not
+		//    found, it SHOULD report an error (by sending an event to the claim) and it
+		//    SHOULD retry periodically with step i.
+	}
+	storageClass, ok := classObj.(*v1beta1.StorageClass)
+	if !ok {
+		return nil, fmt.Errorf("Cannot convert object to StorageClass: %+v", classObj)
+	}
+	if storageClass.Provisioner != ctrl.provisionerName {
+		// class.Provisioner has either changed since shouldProvision() or
+		// annDynamicallyProvisioned contains different provisioner than
+		// class.Provisioner.
+		return nil, fmt.Errorf("Unknown provisioner %q requested in storage class %q", storageClass.Provisioner, name)
+	}
+	return storageClass, nil
 }
 
 func hasAnnotation(obj v1.ObjectMeta, ann string) bool {
