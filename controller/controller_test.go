@@ -71,13 +71,23 @@ func TestController(t *testing.T) {
 		{
 			name: "delete volume-1 but not volume-2",
 			objs: []runtime.Object{
-				newVolume("volume-1", v1.VolumeReleased, v1.PersistentVolumeReclaimDelete, map[string]string{annDynamicallyProvisioned: "foo.bar/baz"}),
-				newVolume("volume-2", v1.VolumeReleased, v1.PersistentVolumeReclaimDelete, map[string]string{annDynamicallyProvisioned: "abc.def/ghi"}),
+				newStorageClass("class-1", "foo.bar/baz"),
+				newVolume("volume-1", v1.VolumeReleased, v1.PersistentVolumeReclaimDelete, map[string]string{
+					annClass:                  "class-1",
+					annDynamicallyProvisioned: "foo.bar/baz",
+				}),
+				newVolume("volume-2", v1.VolumeReleased, v1.PersistentVolumeReclaimDelete, map[string]string{
+					annClass:                  "class-1",
+					annDynamicallyProvisioned: "abc.def/ghi",
+				}),
 			},
 			provisionerName: "foo.bar/baz",
 			provisioner:     newTestProvisioner(),
 			expectedVolumes: []v1.PersistentVolume{
-				*newVolume("volume-2", v1.VolumeReleased, v1.PersistentVolumeReclaimDelete, map[string]string{annDynamicallyProvisioned: "abc.def/ghi"}),
+				*newVolume("volume-2", v1.VolumeReleased, v1.PersistentVolumeReclaimDelete, map[string]string{
+					annClass:                  "class-1",
+					annDynamicallyProvisioned: "abc.def/ghi",
+				}),
 			},
 		},
 		{
@@ -557,7 +567,7 @@ func (p *testProvisioner) Provision(options VolumeOptions) (*v1.PersistentVolume
 	return pv, nil
 }
 
-func (p *testProvisioner) Delete(volume *v1.PersistentVolume) error {
+func (p *testProvisioner) Delete(volume *v1.PersistentVolume, parameters map[string]string) error {
 	return nil
 }
 
@@ -574,7 +584,7 @@ func (p *badTestProvisioner) Provision(options VolumeOptions) (*v1.PersistentVol
 	return nil, errors.New("fake error")
 }
 
-func (p *badTestProvisioner) Delete(volume *v1.PersistentVolume) error {
+func (p *badTestProvisioner) Delete(volume *v1.PersistentVolume, parameters map[string]string) error {
 	return errors.New("fake error")
 }
 
