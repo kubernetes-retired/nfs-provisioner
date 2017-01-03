@@ -31,7 +31,7 @@ import (
 type Provisioner interface {
 	// Provision creates a volume i.e. the storage asset and returns a PV object
 	// for the volume
-	Provision(VolumeOptions) (*v1.PersistentVolume, error)
+	Provision(VolumeOptions, *v1.PersistentVolumeClaim) (*v1.PersistentVolume, error)
 	// Delete removes the storage asset that was created by Provision backing the
 	// given PV. Does not delete the PV object itself.
 	//

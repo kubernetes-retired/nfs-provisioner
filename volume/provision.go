@@ -157,8 +157,8 @@ type nfsProvisioner struct {
 var _ controller.Provisioner = &nfsProvisioner{}
 
 // Provision creates a volume i.e. the storage asset and returns a PV object for
-// the volume.
-func (p *nfsProvisioner) Provision(options controller.VolumeOptions) (*v1.PersistentVolume, error) {
+// the volume.  claim is not used in this example.
+func (p *nfsProvisioner) Provision(options controller.VolumeOptions, claim *v1.PersistentVolumeClaim) (*v1.PersistentVolume, error) {
 	server, path, supGroup, exportBlock, exportId, projectBlock, projectId, err := p.createVolume(options)
 	if err != nil {
 		return nil, err
