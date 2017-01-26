@@ -38,7 +38,7 @@ type Provisioner interface {
 	// class, provisioners may ignore PVs they are not responsible for (e.g. ones
 	// they didn't create). The controller will act accordingly, i.e. it won't
 	// emit a misleading VolumeFailedDelete event.
-	Delete(*v1.PersistentVolume) error
+	Delete(*v1.PersistentVolume, map[string]string) error
 }
 
 type IgnoredError struct {

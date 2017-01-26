@@ -605,7 +605,7 @@ func (ctrl *ProvisionController) provisionClaimOperation(claim *v1.PersistentVol
 		ctrl.eventRecorder.Event(claim, v1.EventTypeWarning, "ProvisioningFailed", strerr)
 
 		for i := 0; i < ctrl.createProvisionedPVRetryCount; i++ {
-			if err = ctrl.provisioner.Delete(volume); err == nil {
+			if err = ctrl.provisioner.Delete(volume, storageClass.Parameters); err == nil {
 				// Delete succeeded
 				glog.V(4).Infof("provisionClaimOperation [%s]: cleaning volume %s succeeded", claimToClaimKey(claim), volume.Name)
 				break
@@ -801,7 +801,13 @@ func (ctrl *ProvisionController) deleteVolumeOperation(volume *v1.PersistentVolu
 		return nil
 	}
 
-	if err := ctrl.provisioner.Delete(volume); err != nil {
+	storageClass, err := ctrl.getStorageClass(volume.Annotations[annClass])
+	if err != nil {
+		glog.Error(err)
+		return nil
+	}
+
+	if err := ctrl.provisioner.Delete(volume, storageClass.Parameters); err != nil {
 		if ierr, ok := err.(*IgnoredError); ok {
 			// Delete ignored, do nothing and hope another provisioner will delete it.
 			glog.Infof("deletion of volume %q ignored: %v", volume.Name, ierr)
