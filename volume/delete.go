@@ -28,7 +28,7 @@ import (
 
 // Delete removes the directory that was created by Provision backing the given
 // PV and removes its export from the NFS server.
-func (p *nfsProvisioner) Delete(volume *v1.PersistentVolume) error {
+func (p *nfsProvisioner) Delete(volume *v1.PersistentVolume, params map[string]string) error {
 	// Ignore the call if this provisioner was not the one to provision the
 	// volume. It doesn't even attempt to delete it, so it's neither a success
 	// (nil error) nor failure (any other error)
