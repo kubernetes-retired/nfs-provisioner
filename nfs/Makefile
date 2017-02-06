@@ -45,11 +45,11 @@ push: container
 .PHONY: push
 
 test-integration: verify-gofmt
-	go test `go list ./... | grep -v 'vendor\|e2e'`
+	go test `go list ./... | grep -v 'vendor\|test'`
 .PHONY: test-integration
 
 test-e2e: verify-gofmt
-	go test ./e2e -v --kubeconfig=$(HOME)/.kube/config
+	go test ./test/e2e -v --kubeconfig=$(HOME)/.kube/config
 .PHONY: test-e2e
 
 verify-gofmt:
