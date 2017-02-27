@@ -1,3 +1,5 @@
+# Moved to https://github.com/kubernetes-incubator/external-storage. This repo will no longer be updated, it will be deprecated!
+
 # nfs-provisioner
 [![Build Status](https://travis-ci.org/kubernetes-incubator/nfs-provisioner.svg?branch=master)](https://travis-ci.org/kubernetes-incubator/nfs-provisioner)
 
